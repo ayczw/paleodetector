@@ -1,0 +1,42 @@
+# Script to create crystal using ase and cif, as well as reformat the output lmp file so lammps can read it
+
+atoms = read('9011997.cif') #cif file relevant to your crystal
+
+# Replicate the unit cell
+atoms *= ((30,30,30))
+atoms.center
+
+view(atoms) 
+
+write("diamond_cifcell_test.lmp", atoms, format="lammps-data", specorder=['C'])
+
+mass1 = 12.011 #C    -- edit these as needed
+mass2=196.000 #Au
+
+with open('diamond_cifcell_test.lmp', 'w') as f:
+  '''reformats file so lammps can read it properly
+    all notations that follow a '#' symbol are optional and are for clarity'''
+  f.write("This is a title line so LAMMPS doesn't act weird \n")
+  print(len(atoms), 'atoms', file=f)
+  f.write('2 atom types \n') #change to match your crystal, keep plural even for singular type
+  f.write('\n')
+  f.write('-50.0 150.0 xlo xhi \n') #change to fit the dimensions you need
+  f.write('-20.0 110.0 ylo yhi \n')
+  f.write('-20.0 110.0 zlo zhi \n')
+  f.write('\n')
+  f.write('Masses \n')
+  f.write('\n')
+  print('1', mass1, '#C', file=f)
+  print('2', mass2, '#Au \n', file=f)
+  print('Atoms #atomic', atoms.cell, '\n', file=f) 
+  
+  for i, atom in enumerate(atoms, start=1):
+      atom_charge = atom.charge '''this can be changed if a specific charge is wanted, 
+                                also can be placed in the if loops below to specify charge to atom type'''
+      if atom.number == 6:  
+        atom_type = 1
+      #if atom.number == 79:  -- an example of how to adjust for more than one atom type
+        #atom_type = 2
+      x, y, z = atom.position
+      f.write(f"{i} {atom_type} {x:.6f} {y:.6f} {z:.6f}\n")  
+      #f.write(f"{i} {atom_type} {atom_charge} {x:.6f} {y:.6f} {z:.6f} \n") #substitute this line instead of the above if atom charge is wanted
